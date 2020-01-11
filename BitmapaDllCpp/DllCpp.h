@@ -3,7 +3,7 @@
 #pragma pack(push, 1)
 struct RGB
 {
-	unsigned char b, g, r; //uzupe³nienie do 4
+	unsigned char b, g, r, a{0xFF}; //uzupe³nienie do 4
 	
 };
 #pragma pack(pop)

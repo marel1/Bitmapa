@@ -5,20 +5,20 @@
 
 using namespace std;
 
-uint16_t matrix[3][3] = {-1,0,1,
+int matrix[3][3] = {-1,0,1,
 					-1,1,1,
 					-1,0,1 };
-uint16_t matrix2[3][3] = { 0,0,0,
+int matrix2[3][3] = { 0,0,0,
 					0,0,0,
 					0,0,0 };
 
 int SumMatrix = (matrix[0][0] + matrix[0][1] + matrix[0][2] + matrix[1][0] + matrix[1][1] + matrix[1][2] + matrix[2][0] + matrix[2][1] + matrix[2][2]);
 
-extern "C" int _stdcall MyProc1(RGB *rgb, RGB *rgb2, uint16_t matrix[3][3], uint16_t height,int width, int SumMatrix);
+extern "C" int _stdcall MyProc1(RGB *rgb, RGB *rgb2,  int height,int width);
 
 int main()
 {
-	ifstream ifs("tak.bmp", ios::in | ios::binary);
+	ifstream ifs("Zyra.bmp", ios::in | ios::binary);
 	if (ifs.is_open() == false)
 	{
 
@@ -34,8 +34,34 @@ int main()
 	BITMAPINFOHEADER* bih = (BITMAPINFOHEADER*)(temp);
 
 	ifs.seekg(bfh->bfOffBits, ios::beg);
+	RGB*rgb = new RGB[bih->biWidth*bih->biHeight];
+	RGB*rgb2 = new RGB[bih->biWidth*bih->biHeight];
+	if (bih->biWidth % 4 == 0)
+	{
+		temp = new char[3 * bih->biWidth*bih->biHeight];
+		ifs.read(temp, 3 * bih->biWidth*bih->biHeight);
+		for (auto i = 0; i < bih->biWidth*bih->biHeight; i++)
+		{
+			memcpy(&rgb[i], &temp[3 * i], 3);
+			memcpy(&rgb2[i], &temp[3 * i], 3);
+		}
+	}
+	else
+	{
+		auto wyrowanie = 4 - ((bih->biWidth * 3) % 4);
+		temp = new char[(3 * bih->biWidth + wyrowanie)*bih->biHeight];
+		ifs.read(temp, (3 * bih->biWidth+wyrowanie)*bih->biHeight);
+		for (auto y = 0; y < bih->biHeight; y++)
+		{
+			for (auto x = 0; x < bih->biWidth; x++)
+			{
+				memcpy(&rgb[y*bih->biHeight + x], &temp[(y*bih->biHeight + x) * 3 + y * wyrowanie], 3);
+				memcpy(&rgb2[y*bih->biHeight + x], &temp[(y*bih->biHeight + x) * 3 + y * wyrowanie], 3);
+			}
+		}
+	}
 	
-	int width = bih->biWidth;
+	/*int width = bih->biWidth;
 	if (width % 4) width += 4 - (width % 4); // piksele w bitmapie s¹ wyrównywane do 4 bajtów}
 
 	temp = new char[3*bih->biHeight*width];
@@ -48,12 +74,12 @@ int main()
 	{
 		temp2[i] = temp[i];
 	}
-	RGB*rgb2 = (RGB*)(temp2);
+	RGB*rgb2 = (RGB*)(temp2);*/
 	ifs.close();
 
 	//miejsce na operacje na bitmapie
 	//do_smth(rgb,rgb2, matrix,bih, SumMatrix);
-	MyProc1(rgb, rgb2, matrix, bih->biHeight,bih->biWidth, SumMatrix);
+	//MyProc1(rgb, rgb2, bih->biWidth, bih->biHeight);
 	//zapis do pliku
 	ofstream ofs("Test_programu.bmp", ios::binary);
 	temp = (char*)(bfh);
@@ -61,9 +87,21 @@ int main()
 
 	temp = (char*)(bih);
 	ofs.write(temp, sizeof(BITMAPINFOHEADER));
+	unsigned char alpha = 255;
+	for (auto y = 0; y < bih->biHeight; y++)
+	{
+		for (auto x = 0; x < bih->biWidth; x++)
+		{
+			ofs.write((char*)&rgb[y*bih->biWidth + x], 1);
+			ofs.write((char*)&rgb[y*bih->biWidth + x], 1);
+			ofs.write((char*)&rgb[y*bih->biWidth + x], 1);
+			ofs.write((char*)&alpha, 1);
+		}
+	}
 
-	temp = (char*)(rgb2);
-	ofs.write(temp2, 3*bih->biHeight*width);
+
+	/*temp = (char*)(rgb2);
+	ofs.write(temp2, 3*bih->biHeight*width);*/
 	system("pause");
 	return 0;
 }

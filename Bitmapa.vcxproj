@@ -95,7 +95,7 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>C:\Users\Marlena\source\repos\Bitmapa\Bitmapa\x64\Debug\BitmapaDll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\Users\Marlena\source\repos\Bitmapa\Bitmapa\x64\Debug\BitmapaDll.lib</AdditionalDependencies>
     </Link>
     <Link>
       <ModuleDefinitionFile>
