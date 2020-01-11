@@ -4,7 +4,6 @@
 #include<windows.h>
 
 using namespace std;
-
 int matrix[3][3] = {-1,0,1,
 					-1,1,1,
 					-1,0,1 };
@@ -80,13 +79,12 @@ int main()
 	//miejsce na operacje na bitmapie
 	//do_smth(rgb,rgb2, matrix,bih, SumMatrix);
 	//MyProc1(rgb, rgb2, bih->biWidth, bih->biHeight);
-	//zapis do pliku
+	//zapis do 
+	BITMAPFILEHEADER file = {bfh->bfType,54+bih->biWidth*bih->biHeight*4,bfh->bfReserved1,bfh->bfReserved2,bfh->bfOffBits};
+	BITMAPINFOHEADER info = {bih->biSize,bih->biWidth,bih->biHeight,bih->biPlanes,32,bih->biCompression,bih->biSizeImage,bih->biXPelsPerMeter,bih->biYPelsPerMeter,bih->biClrUsed,bih->biClrImportant};
 	ofstream ofs("Test_programu.bmp", ios::binary);
-	temp = (char*)(bfh);
-	ofs.write(temp, sizeof(BITMAPFILEHEADER));
-
-	temp = (char*)(bih);
-	ofs.write(temp, sizeof(BITMAPINFOHEADER));
+	ofs.write((const char*)&file, sizeof(BITMAPFILEHEADER));
+	ofs.write((const char*)&info, sizeof(BITMAPINFOHEADER));
 	unsigned char alpha = 255;
 	for (auto y = 0; y < bih->biHeight; y++)
 	{
