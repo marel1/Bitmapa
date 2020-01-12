@@ -1,46 +1,116 @@
-;------------------------------------------------------------------------- 
 .data
-	permmask2 dword 0, 4, 0, 0,      0, 0, 0, 0
+	;matrix, wartosci rgb oraz kanaÅ‚ alfa mnozony przez 0
+	;P1 P2 P3
+	;P4 P5 P6
+	;P7 P8 P9
+	ALIGN 16 
+	P1 WORD -1, -1, -1,  0
+	ALIGN 16 
+	P2 WORD  0,  0,  0,  0
+	ALIGN 16 
+	P3 WORD  1,  1,  1,  0
+
+	ALIGN 16 
+	P4 WORD -1, -1, -1,  0
+	ALIGN 16 
+	P5 WORD  1,  1,  1,  0
+	ALIGN 16 
+	P6 WORD  1,  1,  1,  0
+	
+	ALIGN 16 
+	P7 WORD -1, -1, -1,  0
+	ALIGN 16 
+	P8 WORD  0,  0,  0,  0
+	ALIGN 16 
+	P9 WORD  1,  1,  1,  0
+
 .code
 
-DllMain PROC		;punkt wejœcia
+;------------------------------------------------------------------------- 
+
+DllMain PROC  ;punkt wejÅ›cia
 	mov rax, 1
 	ret
 DllMain ENDP
 
-;------------------------------------------------------------------------- 
-; INPUT DATA
-;------------------------------------------------------------------------- 
-;rgb,		-zawiera wartoœci rgb wczytanego obrazu
-;rgb2,		-zawiera wartoœci rgb obrazu wynikowego
-;matrix,	-dane z macierzy filtruj¹cej
-;bih->width,bih->height		-informacje na temat wysokoœci i szerokoœci obrazu 
-;SumMatrix	-suma wartoœci macierzy filtruj¹cej
-;-------------------------------------------------------------------------
-;Filtration (RGB*,RGB*,matrix*,int,int,int)
-;rgb*=rcx
-;b=[RCX]		RDX		RDI R8		R9	r11
-;g=[RCX+1]
-;r=[RCX+2]
-;rcx,rdx,rdi,r8,r9,r11,rip,rsp,rbp,efl
-;-------------------------------------------------------------------------
+
+; fun(*RGB1, *RGB2, width, height
+; RCX - *RGB1
+; RDX - *RGB2
+; R8 - width
+; R9 - height
 MyProc1 PROC
 
-pxor mm6,mm6 ;wyzerowanie
-;moovq mm0,[rcx]
-;movq mm1,[rdx]
-;movq mm1,byte ptr [rcx]
+	lea RDX, [RDX + R8*4 + 4]		;adres pixela w RGB2, krawedzie obrazow pomijane
+
+	mov R10, 2 ;x counter
+	mov R11, 2 ;y counter
+	;zamiast sprawdzac do width-2, zaczynamy od 2 az do width
 
 
+	RowY:
+	
+		RowX:
+
+			pmovzxbw XMM1, QWORD PTR [RCX]				;przenies r, g, b, a do xmm1 rozszerzajac na liczby 16-bitowe
+			pmullw XMM1, P1								;pomnoz przez czesc P1 maceirzy
+			
+			pmovzxbw XMM2, QWORD PTR [RCX + 4]			;przenies r, g, b, a do xmm2 rozszerzajac na liczby 16-bitowe
+			pmullw XMM2, P2								;pomnoz przez czesc P2 maceirzy
+			paddw XMM1, XMM2							;dodaj wynik do XMM1
+
+			pmovzxbw XMM2, QWORD PTR [RCX + 8]			;przenies r, g, b, a do xmm2 rozszerzajac na liczby 16-bitowe
+			pmullw XMM2, P3								;pomnoz przez czesc P3 maceirzy
+			paddw XMM1, XMM2							;dodaj wynik do XMM1
+			;------------------------------------
+			pmovzxbw XMM2, QWORD PTR [RCX + R8*4]		;przenies r, g, b, a do xmm2 rozszerzajac na liczby 16-bitowe
+			pmullw XMM2, P4								;pomnoz przez czesc P4 maceirzy
+			paddw XMM1, XMM2							;dodaj wynik do XMM1
+
+			pmovzxbw XMM2, QWORD PTR [RCX + R8*4 + 4]	;przenies r, g, b, a do xmm2 rozszerzajac na liczby 16-bitowe
+			pmullw XMM2, P5								;pomnoz przez czesc P5 maceirzy
+			paddw XMM1, XMM2							;dodaj wynik do XMM1
+
+			pmovzxbw XMM2, QWORD PTR [RCX + R8*4 + 8]	;przenies r, g, b, a do xmm2 rozszerzajac na liczby 16-bitowe
+			pmullw XMM2, P6								;pomnoz przez czesc P6 maceirzy
+			paddw XMM1, XMM2							;dodaj wynik do XMM1
+			;------------------------------------
+			pmovzxbw XMM2, QWORD PTR [RCX + R8*8]		;przenies r, g, b, a do xmm2 rozszerzajac na liczby 16-bitowe
+			pmullw XMM2, P7								;pomnoz przez czesc P7 maceirzy
+			paddw XMM1, XMM2							;dodaj wynik do XMM1
+
+			pmovzxbw XMM2, QWORD PTR [RCX + R8*8 + 4]	;przenies r, g, b, a do xmm2 rozszerzajac na liczby 16-bitowe
+			pmullw XMM2, P8								;pomnoz przez czesc P8 maceirzy
+			paddw XMM1, XMM2							;dodaj wynik do XMM1
+
+			pmovzxbw XMM2, QWORD PTR [RCX + R8*8 + 8]	;przenies r, g, b, a do xmm2 rozszerzajac na liczby 16-bitowe
+			pmullw XMM2, P9								;pomnoz przez czesc P9 maceirzy
+			paddw XMM1, XMM2							;dodaj wynik do XMM1
+
+			packuswb XMM1,XMM1							;zmiana nasycenia				
+			movd DWORD PTR [RDX], XMM1					;zapisz otrzymana wartosc do piksela RGB2
 
 
-;movq mm0, [rcx] ;za³adowanie tablicy
-;punpcklbw mm0,mm6 ;rozpakowanie z zerami do 16 bitów
-;pmullw mm0,rdi ;mno¿enie przez macierz
-;packuswb mm0,mm0;spakowanie do bitu
+			inc R10		;x++
+			add RCX, 4 ;przejÅ›cie do nastÄ™pnego pixela rgb
+			add RDX, 4 ;przejÅ›cie do nastÄ™pnego pixela rgb2
+
+			cmp R10, R8	;if x > width => break
+		
+		jne RowX
+
+		mov R10, 2	;x = 0
+
+		inc R11		;y++
+		add RCX, 8 ;przejÅ›cie do nastÄ™pnego pixela rgb pomijajÄ…c "krawÄ™dzie"
+		add RDX, 8 ;przejÅ›cie do nastÄ™pnego pixela rgb pomijajÄ…c "krawÄ™dzie"
+		
+		cmp R11, R9 ;if y > height => break
+
+	jne RowY
 
 
-ret
+	ret
 MyProc1 endp
 
 END 
