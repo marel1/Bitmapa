@@ -57,35 +57,56 @@ int main()
 	}
 	ifs.close();
 	int ThreadCount = 0;
-	cout << "Podaj liczbe watkow: ";
+	std::cout << "Podaj liczbe watkow od 1 do 64 (inna liczba spowoduje uruchomienie optymalnej liczby watkow): ";
 	cin >> ThreadCount;
-	if (ThreadCount > 32 || ThreadCount < 1)
+	if (ThreadCount > 64 || ThreadCount < 1)
 	{
 		ThreadCount = thread::hardware_concurrency();
 	}
-	cout << "Liczba watkow wynosi: " << ThreadCount << endl;
-	auto Futures = new future<void>[ThreadCount];
-	auto HeightByThread = bih->biHeight / ThreadCount;
-	for (auto i = 0; i < ThreadCount; i ++ )
+	std::cout << "Liczba watkow wynosi: " << ThreadCount << endl;
+	auto Futures = new future<void>[ThreadCount]; //stworzenie w¹tków
+	auto HeightByThread = bih->biHeight / ThreadCount; //wysokoœc obrazu dla w¹tku
+	chrono::steady_clock::time_point start = chrono::steady_clock::now();
+	if (ThreadCount != 1)
 	{
-		Futures[i] = async(launch::async, [&] {
-			do_smth(&rgb[i*HeightByThread*bih->biWidth],&rgb2[i*HeightByThread*bih->biWidth], matrix, bih->biWidth, HeightByThread, SumMatrix);
-		});
-	}
-	for (auto i = 0; i < ThreadCount; i++)
-	{
-		Futures[i].wait();
-	}
-	//pocz¹tek liczenia czasu
-	chrono::steady_clock::time_point start =chrono::steady_clock::now();
-	//miejsce na operacje na bitmapie
 
+		/*do_smth(&rgb[0], &rgb2[0], matrix, bih->biWidth, HeightByThread + 1, SumMatrix);
+		for (int i = 1; i < ThreadCount - 1; i++)
+		{
+			do_smth(&rgb[i * (HeightByThread - 1)*bih->biWidth], &rgb2[i * (HeightByThread - 1)*bih->biWidth], matrix, bih->biWidth, HeightByThread + 2, SumMatrix);
+		}
+		do_smth(&rgb[(ThreadCount - 1) * (HeightByThread - 1)*bih->biWidth], &rgb2[(ThreadCount - 1) * (HeightByThread - 1)*bih->biWidth], matrix, bih->biWidth, HeightByThread + 1, SumMatrix);*/
+		Futures[0] = async(launch::async, [=] {do_smth(&rgb [0], &rgb2[ 0], matrix, bih->biWidth, HeightByThread + 1, SumMatrix); });
+		for (int i = 1; i < ThreadCount - 1; i++)
+		{
+			Futures[i] = async(launch::async, [=] {do_smth(&rgb[ i * (HeightByThread - 1)*bih->biWidth], &rgb2[ i * (HeightByThread - 1)*bih->biWidth], matrix, bih->biWidth, HeightByThread + 2, SumMatrix);});
+		}
+		Futures[ThreadCount - 1] = async(launch::async, [=] {do_smth(&rgb[(ThreadCount - 1) * (HeightByThread - 1)*bih->biWidth],&rgb2 [ (ThreadCount - 1) * (HeightByThread - 1)*bih->biWidth], matrix, bih->biWidth, HeightByThread + 1, SumMatrix); });
+
+		for (auto i = 0; i < ThreadCount; i++)
+		{
+			Futures[i].wait();
+		}
+		if (bih->biHeight%ThreadCount != 0)
+		{
+			do_smth(&rgb[(ThreadCount) * (HeightByThread - 1)*bih->biWidth], &rgb2[(ThreadCount) * (HeightByThread - 1)*bih->biWidth], matrix, bih->biWidth, (bih->biHeight - ThreadCount * HeightByThread)+1, SumMatrix);
+		}
+	}
+	else
+	{
+		do_smth(&rgb [0], &rgb2 [0], matrix, bih->biWidth, HeightByThread , SumMatrix);
+	}
+
+	chrono::steady_clock::time_point end = chrono::steady_clock::now();
+	//pocz¹tek liczenia czasu
+	//miejsce na operacje na bitmapie
 	//do_smth(rgb,rgb2, matrix,bih->biWidth,bih->biHeight, SumMatrix);
 	//MyProc1(rgb, rgb2, bih->biWidth, bih->biHeight);
-
+	//do_smth(rgb3 =rgb+0, rgb4=rgb2+0, matrix, bih->biWidth, HeightByThread, SumMatrix);
+	//do_smth(rgb3 = rgb+HeightByThread*bih->biWidth, rgb4 =rgb2+ HeightByThread*bih->biWidth, matrix, bih->biWidth, HeightByThread, SumMatrix);
+	//do_smth(rgb3 = rgb + 2*HeightByThread * bih->biWidth, rgb4 = rgb2 + 2*HeightByThread * bih->biWidth, matrix, bih->biWidth, HeightByThread, SumMatrix);
 	//koniec liczenia czasu
-	chrono::steady_clock::time_point end = chrono::steady_clock::now();
-	cout << "Czas trwania algorytmu: "
+	std::cout << "Czas trwania algorytmu: "
 		<< chrono::duration_cast<chrono::microseconds>(end - start).count()
 		<< "us.\n";
 
